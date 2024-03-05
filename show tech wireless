@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+
+import os
+import paramiko
+import schedule
+import time
+from datetime import datetime
+
+# Define file path for saving output
+output_directory = "/home/zomato/WLC-Sh-Tech-Wire" #Where you want to store op
+
+def execute_show_tech_wireless():
+    # SSH connection parameters
+    host = 'ip-address'  # WLC IP address
+    username = 'username'
+    password = 'password'
+
+    # Check if the current time is within the allowed time frame (10 am to 6 pm) and it's a weekday
+    current_time = datetime.now().time()
+    if current_time < datetime.strptime('10:00', '%H:%M').time() or current_time > datetime.strptime('20:00', '%H:%M').time() or datetime.today().weekday() >= 5:
+        print("Script can only run between 10 am and 8 pm on weekdays.")
+        return
+
+    # SSH connection setup
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        # Connect to the WLC
+        ssh_client.connect(hostname=host, username=username, password=password, timeout=10)
+
+        # Execute the command
+        stdin, stdout, stderr = ssh_client.exec_command('show tech wireless')
+
+        # Create directory with current date
+        current_date = datetime.now().strftime('%Y-%m-%d')
+        directory_path = os.path.join(output_directory, current_date)
+        os.makedirs(directory_path, exist_ok=True)
+
+        # Create file with current time
+        current_time = datetime.now().strftime('%H-%M-%S')
+        file_path = os.path.join(directory_path, f'show_tech_wireless_{current_time}.txt')
+
+        # Write output to file
+        with open(file_path, 'w') as f:
+            f.write(stdout.read().decode())
+
+        print(f"Output saved to {file_path}")
+
+    except paramiko.AuthenticationException:
+        print("Authentication failed, please verify your credentials.")
+    except paramiko.SSHException as ssh_err:
+        print(f"Unable to establish SSH connection: {ssh_err}")
+    finally:
+        # Close the SSH connection
+        ssh_client.close()
+
+# Schedule the execution of the command every 30mins between 10 am and 8 pm on weekdays
+schedule.every().hour.at(":00").do(lambda: execute_show_tech_wireless() if datetime.now().weekday() < 5 else None)
+# Run the scheduler
+while True:
+    schedule.run_pending()
+    time.sleep(1)

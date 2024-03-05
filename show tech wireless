@@ -7,7 +7,7 @@ import time
 from datetime import datetime
 
 # Define file path for saving output
-output_directory = "/home/zomato/WLC-Sh-Tech-Wire" #Where you want to store op
+output_directory = "/home/WLC-Sh-Tech-Wire" #Where you want to store op
 
 def execute_show_tech_wireless():
     # SSH connection parameters
